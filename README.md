@@ -63,3 +63,9 @@ Change your username and password. You can access this by clicking dropdown in t
 
 ![Image of Yaktocat](output/account-settings.jpg)
 
+## Status do CI/CD
+
+Pipeline CI/CD configurada para este repositório. Jobs incluídos: `build` (instalação e validação de sintaxe), `sast` (Bandit), `dependency-check` (OWASP Dependency-Check) e `dast` (OWASP ZAP). Os segredos são lidos via GitHub Secrets (`SECRET_KEY`).
+
+Data da configuração: 2026-06-09
+
