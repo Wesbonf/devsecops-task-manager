@@ -91,6 +91,7 @@ jobs:
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+      APP_HOST: '0.0.0.0'
 
     steps:
       - name: Checkout
