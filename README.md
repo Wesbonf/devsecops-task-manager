@@ -69,3 +69,5 @@ Pipeline CI/CD configurada para este repositório. Jobs incluídos: `build` (ins
 
 Data da configuração: 2026-06-09
 
+Validação final do CI/CD concluída.
+
