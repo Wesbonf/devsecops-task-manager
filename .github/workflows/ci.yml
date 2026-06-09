@@ -110,7 +110,7 @@ jobs:
 
       - name: Start Application
         run: |
-          python run.py > app.log 2>&1 &
+          python todo_project/run.py > app.log 2>&1 &
           for i in {1..30}; do
             if curl --fail --silent http://127.0.0.1:5000/ > /dev/null; then
               echo "Application is ready"
