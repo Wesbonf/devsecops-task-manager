@@ -47,6 +47,8 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
       - name: Install Bandit
         run: |
@@ -69,6 +71,8 @@ jobs:
         with:
           project: "Task-Manager"
           path: "."
+          format: "ALL"
+          out: "reports"
 
   dast:
     runs-on: ubuntu-latest
@@ -83,6 +87,8 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
       - name: Install Dependencies
         run: |
