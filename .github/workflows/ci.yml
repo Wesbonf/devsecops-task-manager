@@ -10,20 +10,16 @@ on:
       - develop
       - stage
       - production
-
   pull_request:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -44,7 +40,6 @@ jobs:
   sast:
     runs-on: ubuntu-latest
     needs: build
-
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
@@ -63,67 +58,147 @@ jobs:
 
       - name: Run Bandit
         run: |
-          bandit -r .
+          bandit -r . -f json -o bandit-report.json
 
-  dependency-check:
-    runs-on: ubuntu-latest
-    needs: sast
+      - name: Upload Bandit Report
+        name: CI
 
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+        on:
+          push:
+            branches:
+              - main
+              - develop
+              - stage
+              - production
+          pull_request:
 
-      - name: OWASP Dependency Check
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: "Task-Manager"
-          path: "."
-          format: "ALL"
-          out: "reports"
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            env:
+              SECRET_KEY: ${{ secrets.SECRET_KEY }}
+              FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
-  dast:
-    runs-on: ubuntu-latest
-    needs: dependency-check
+            steps:
+              - name: Checkout
+                uses: actions/checkout@v4
 
-    env:
-      SECRET_KEY: ${{ secrets.SECRET_KEY }}
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-      APP_HOST: '0.0.0.0'
-      APP_PORT: '5000'
-      FLASK_DEBUG: 'false'
+              - name: Setup Python
+                uses: actions/setup-python@v5
+                with:
+                  python-version: "3.10"
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+              - name: Install Dependencies
+                run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+              - name: Validate Python Syntax
+                run: |
+                  python -m py_compile $(find . -name "*.py")
 
-      - name: Install Dependencies
-        run: |
-          pip install -r requirements.txt
+          sast:
+            runs-on: ubuntu-latest
+            needs: build
+            env:
+              FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
-      - name: Start Application
-        run: |
-          python todo_project/run.py > app.log 2>&1 &
-          for i in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:5000/ > /dev/null; then
-              echo "Application is ready"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Application did not become ready in time"
-          cat app.log
-          exit 1
+            steps:
+              - name: Checkout
+                uses: actions/checkout@v4
 
-      - name: OWASP ZAP Scan
-        uses: zaproxy/action-baseline@v0.14.0
-        with:
-          target: "http://127.0.0.1:5000"
-          allow_issue_writing: false
+              - name: Setup Python
+                uses: actions/setup-python@v5
+                with:
+                  python-version: "3.10"
+
+              - name: Install Bandit
+                run: |
+                  pip install bandit
+
+              - name: Run Bandit
+                run: |
+                  bandit -r . -f json -o bandit-report.json
+
+              - name: Upload Bandit Report
+                uses: actions/upload-artifact@v4
+                with:
+                  name: bandit-report
+                  path: bandit-report.json
+
+          dependency-check:
+            runs-on: ubuntu-latest
+            needs: sast
+            env:
+              FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+            steps:
+              - name: Checkout
+                uses: actions/checkout@v4
+
+              - name: OWASP Dependency Check
+                uses: dependency-check/Dependency-Check_Action@main
+                with:
+                  project: "Task-Manager"
+                  path: "."
+                  format: "ALL"
+                  out: "reports"
+
+              - name: Upload Dependency Check Reports
+                uses: actions/upload-artifact@v4
+                with:
+                  name: dependency-check-reports
+                  path: reports/
+
+          dast:
+            runs-on: ubuntu-latest
+            needs: dependency-check
+            env:
+              SECRET_KEY: ${{ secrets.SECRET_KEY }}
+              FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+              APP_HOST: '0.0.0.0'
+              APP_PORT: '5000'
+              FLASK_DEBUG: 'false'
+
+            steps:
+              - name: Checkout
+                uses: actions/checkout@v4
+
+              - name: Setup Python
+                uses: actions/setup-python@v5
+                with:
+                  python-version: "3.10"
+
+              - name: Install Dependencies
+                run: |
+                  pip install -r requirements.txt
+
+              - name: Start Application
+                run: |
+                  python todo_project/run.py > app.log 2>&1 &
+                  for i in {1..30}; do
+                    if curl --fail --silent http://127.0.0.1:5000/ > /dev/null; then
+                      echo "Application is ready"
+                      exit 0
+                    fi
+                    sleep 2
+                  done
+                  echo "Application did not become ready in time"
+                  cat app.log
+                  exit 1
+
+              - name: OWASP ZAP Scan
+                uses: zaproxy/action-baseline@v0.14.0
+                with:
+                  target: "http://127.0.0.1:5000"
+                  allow_issue_writing: false
+
+              - name: Upload Application Log
+                if: always()
+                uses: actions/upload-artifact@v4
+                with:
+                  name: application-log
+                  path: app.log
