@@ -1,4 +1,5 @@
 from flask import render_template, url_for, flash, redirect, request
+import logging
 
 from todo_project import app, db, bcrypt
 
@@ -65,16 +66,24 @@ def login():
         ):
 
             login_user(user)
+<<<<<<< HEAD
 
             app.logger.info(
                 f"LOGIN_SUCESSO usuario={user.username}"
             )
 
+=======
+            app.logger.info(
+                f"LOGIN_SUCESSO usuario={user.username} ip={request.remote_addr}"
+            )
+            task_form = TaskForm()
+>>>>>>> develop
             flash('Login Successfull', 'success')
 
             return redirect(url_for('all_tasks'))
 
         else:
+<<<<<<< HEAD
 
             app.logger.warning(
                 f"LOGIN_FALHA usuario={form.username.data}"
@@ -100,6 +109,21 @@ def logout():
             f"LOGOUT usuario={current_user.username}"
         )
 
+=======
+            app.logger.warning(
+                f"LOGIN_FALHA usuario={form.username.data} ip={request.remote_addr}"
+            )
+            flash('Login Unsuccessful. Please check Username Or Password', 'danger')
+    
+    return render_template('login.html', title='Login', form=form)
+    
+
+@app.route("/logout")
+def logout():
+    app.logger.info(
+        f"LOGOUT usuario={getattr(current_user, 'username', 'anonymous')}"
+    )
+>>>>>>> develop
     logout_user()
 
     return redirect(url_for('login'))
@@ -175,11 +199,17 @@ def add_task():
 
         db.session.add(task)
         db.session.commit()
+<<<<<<< HEAD
 
         app.logger.info(
             f"TASK_CREATED usuario={current_user.username}"
         )
 
+=======
+        app.logger.info(
+            f"TAREFA_CRIADA usuario={current_user.username} tarefa={form.task_name.data}"
+        )
+>>>>>>> develop
         flash('Task Created', 'success')
 
         return redirect(url_for('add_task'))
@@ -240,11 +270,17 @@ def delete_task(task_id):
 
     db.session.delete(task)
     db.session.commit()
+<<<<<<< HEAD
 
     app.logger.info(
         f"TASK_DELETED usuario={current_user.username}"
     )
 
+=======
+    app.logger.info(
+        f"TAREFA_EXCLUIDA usuario={current_user.username} tarefa_id={task_id}"
+    )
+>>>>>>> develop
     flash('Task Deleted', 'info')
 
     return redirect(url_for('all_tasks'))
