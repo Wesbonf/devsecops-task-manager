@@ -1,4 +1,5 @@
 from flask import render_template, url_for, flash, redirect, request
+import logging
 
 from todo_project import app, db, bcrypt
 
@@ -44,10 +45,16 @@ def login():
         # Check if the user exists and the password is valid
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user)
+            app.logger.info(
+                f"LOGIN_SUCESSO usuario={user.username} ip={request.remote_addr}"
+            )
             task_form = TaskForm()
             flash('Login Successfull', 'success')
             return redirect(url_for('all_tasks'))
         else:
+            app.logger.warning(
+                f"LOGIN_FALHA usuario={form.username.data} ip={request.remote_addr}"
+            )
             flash('Login Unsuccessful. Please check Username Or Password', 'danger')
     
     return render_template('login.html', title='Login', form=form)
@@ -55,6 +62,9 @@ def login():
 
 @app.route("/logout")
 def logout():
+    app.logger.info(
+        f"LOGOUT usuario={getattr(current_user, 'username', 'anonymous')}"
+    )
     logout_user()
     return redirect(url_for('login'))
 
@@ -91,6 +101,9 @@ def add_task():
         task = Task(content=form.task_name.data, author=current_user)
         db.session.add(task)
         db.session.commit()
+        app.logger.info(
+            f"TAREFA_CRIADA usuario={current_user.username} tarefa={form.task_name.data}"
+        )
         flash('Task Created', 'success')
         return redirect(url_for('add_task'))
     return render_template('add_task.html', form=form, title='Add Task')
@@ -121,6 +134,9 @@ def delete_task(task_id):
     task = Task.query.get_or_404(task_id)
     db.session.delete(task)
     db.session.commit()
+    app.logger.info(
+        f"TAREFA_EXCLUIDA usuario={current_user.username} tarefa_id={task_id}"
+    )
     flash('Task Deleted', 'info')
     return redirect(url_for('all_tasks'))
 
